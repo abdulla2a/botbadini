@@ -1,0 +1,5 @@
+python-telegram-bot==21.1
+google-generativeai==0.4.1
+python-dotenv==1.0.1
+nest_asyncio==1.6.0
+Flask

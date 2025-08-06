@@ -37,17 +37,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if model:
         try:
             print("[LOG] Sending message to Gemini AI...")
-            response = model.generate_content(user_message)
-            # معالجة الاستجابة بشكل آمن
+            custom_prompt = f"""
+ئه‌ز بۆتی بادينى مه كو ژیریا دەستکردم، کۆ ژ لایێ عبدالله ڤه‌هاتیمه‌ چێکرن.
+            جاوب على الأسئلة بشكل ذكي، محترم، وسهل الفهم.
+            السؤال: {user_message}
+            """
+            response = model.generate_content(custom_prompt)
             try:
-                # تحقق من وجود المرشح وجزء النص
                 if response.candidates and response.candidates[0].content.parts:
                     reply = response.candidates[0].content.parts[0].text
                     print(f"[LOG] Gemini AI response: {reply}")
                 else:
-                    # طباعة الرد الكامل للمساعدة في التشخيص
                     print("[LOG] Gemini API full response:", response)
-                    # تحقق من وجود أسباب الحجب
                     safety_ratings = getattr(response.candidates[0], 'safety_ratings', None) if response.candidates else None
                     if safety_ratings:
                         print("[LOG] Safety ratings:", safety_ratings)
@@ -63,7 +64,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("[LOG] Gemini model is None!")
     await update.message.reply_text(reply)
     print("[LOG] Reply sent.")
-
 import asyncio
 
 async def main():

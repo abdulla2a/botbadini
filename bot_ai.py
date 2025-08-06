@@ -1,22 +1,30 @@
 import os
+import nest_asyncio
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import Application, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    Application,
+    MessageHandler,
+    CommandHandler,
+    ContextTypes,
+    filters,
+)
 import google.generativeai as genai
-import nest_asyncio
-nest_asyncio.apply()
 from flask import Flask
 from threading import Thread
+import asyncio
+
+# تفعيل nest_asyncio
+nest_asyncio.apply()
 
 # تحميل متغيرات البيئة
 load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-# تهيئة Google Generative AI
+# إعداد Google Generative AI
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
-    # طباعة قائمة النماذج المتاحة
     print("[LOG] Available models:")
     try:
         for m in genai.list_models():
@@ -30,6 +38,7 @@ if GOOGLE_API_KEY:
 else:
     model = None
 
+# دالة الرد على الرسائل النصية
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     print(f"[LOG] Received message: {user_message}")
@@ -64,16 +73,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("[LOG] Gemini model is None!")
     await update.message.reply_text(reply)
     print("[LOG] Reply sent.")
-import asyncio
 
+# دالة أمر /start
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👋 أهلاً بك في بوت باديني! أرسل سؤالك للذكاء الاصطناعي.")
+
+# إعداد البوت
 async def main():
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+
+    # أوامر البوت
+    app.add_handler(CommandHandler("start", start_command))
+
+    # الرسائل النصية العادية (ما عدا الأوامر)
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message))
+
     print("Bot is running...")
     await app.run_polling()
 
-
-# إعداد Flask
+# إعداد Flask لبيئة Replit أو سيرفر خارجي
 flask_app = Flask(__name__)
 
 @flask_app.route("/")
@@ -83,13 +101,16 @@ def home():
 def run_flask():
     flask_app.run(host="0.0.0.0", port=8080)
 
-if __name__ == "__main__":
+# تشغيل البوت
+if name == "__main__":
     print(f"[LOG] TELEGRAM_BOT_TOKEN: {TELEGRAM_BOT_TOKEN}")
     print(f"[LOG] GOOGLE_API_KEY: {GOOGLE_API_KEY}")
-    # تشغيل Flask في thread منفصل
+
+    # Flask يعمل في thread منفصل
     flask_thread = Thread(target=run_flask, daemon=True)
     flask_thread.start()
-    import asyncio
+
+    # تشغيل البوت
     try:
         asyncio.run(main())
     except Exception as e:
